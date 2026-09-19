@@ -18,12 +18,24 @@ export function JoinPage() { const params = new URLSearchParams(window.location.
 function FormStep({ title, children }) { return <div className="form-step"><h2>{title}</h2>{children}</div> }
 
 export function QueuePage() {
-  const { currentQueue, setCurrentQueue, leaveQueue, settings, setNotifications } = useQueue();
+  const { currentQueue, setCurrentQueue, leaveQueue, settings, setNotifications, updateSetting } = useQueue();
   const [confirm, setConfirm] = useState(false);
   const [resumeMessage, setResumeMessage] = useState('');
   const [resumeTone, setResumeTone] = useState('info');
+  const [alertSettingsOpen, setAlertSettingsOpen] = useState(false);
+
+  const speakQueueUpdate = (text) => {
+    if (!settings.spoken || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+  };
 
   const notifyQueue = (title, body, tone = 'info') => {
+    const isTurnAlert = /turn|ready/i.test(title) || /turn|ready/i.test(body);
+    const alertEnabled = isTurnAlert ? settings.turnAlerts : settings.queueAlerts;
+
     setResumeTone(tone);
     setResumeMessage(`${title}: ${body}`);
     setNotifications((items) => [{
@@ -38,8 +50,12 @@ export function QueuePage() {
     const pending = { title: `QueueLess • ${title}`, body, tag: 'queueless-resume', tone };
     localStorage.setItem('queueless-pending-notification', JSON.stringify(pending));
 
-    if (settings.browser && 'Notification' in window && Notification.permission === 'granted') {
+    if (alertEnabled && settings.browser && 'Notification' in window && Notification.permission === 'granted') {
       new Notification(pending.title, { body: pending.body, tag: pending.tag });
+    }
+
+    if (settings.spoken && alertEnabled) {
+      speakQueueUpdate(`${title}. ${body}`);
     }
   };
 
@@ -91,7 +107,8 @@ export function QueuePage() {
   const wait = Math.max(1, Math.round(ahead * currentQueue.average / currentQueue.counters));
   const turnState = ahead === 0 ? 'Your turn' : ahead <= 2 ? 'Your turn is coming soon' : 'Queue is moving';
   const turnTone = ahead === 0 ? 'success' : ahead <= 2 ? 'warning' : 'success';
-  return <Page eyebrow="Virtual waiting room" title="Your queue, in view." actions={<Badge tone={turnTone}>{turnState}</Badge>}><div className="queue-layout">{resumeMessage && <div className={`toast toast-${resumeTone}`} role="status"><span>{resumeMessage}</span></div>}<Card className="live-token"><span>YOUR TOKEN</span><strong>{currentQueue.token}</strong><div className="token-status"><Badge tone={ahead === 0 ? 'success' : 'info'}>{ahead === 0 ? 'Ready' : 'Waiting'}</Badge><span>Joined {currentQueue.joinedAt}</span></div></Card><div className="queue-stats"><Card><span>Currently serving</span><strong>{ahead === 0 ? currentQueue.token : currentQueue.currentServing}</strong></Card><Card><span>People ahead</span><strong>{ahead}</strong></Card><Card><span>Estimated wait</span><strong>{ahead === 0 ? 'Now' : `${wait} min`}</strong></Card><Card><span>Counter</span><strong>{ahead === 0 ? 'Please proceed' : (currentQueue.counter || 'Assigned soon')}</strong></Card></div><Card className="queue-progress-card"><div className="card-row"><div><h2>Queue progress</h2><p>Based on {currentQueue.average} min average service time and {currentQueue.counters} active counters.</p></div><Clock3 size={22} /></div><div className="queue-progress"><span style={{ width: `${ahead === 0 ? 100 : Math.min(96, Math.max(12, 100 - ahead * 7))}%` }} /></div><div className="progress-labels"><span>Joined</span><span>{ahead === 0 ? 'Ready now' : (ahead <= 2 ? 'Almost there' : 'Being served')}</span><span>Your turn</span></div></Card><div className="queue-actions"><Button variant="secondary" icon={Bell}>Manage alerts</Button><button className="button button-secondary" onClick={() => setConfirm(true)}><X size={17} /> Leave queue</button></div></div><Modal open={confirm} title="Leave this queue?" onClose={() => setConfirm(false)}><p className="modal-copy">Are you sure you want to leave queue {currentQueue.token}? Your place will be released.</p><div className="modal-actions"><button className="button button-secondary" onClick={() => setConfirm(false)}>Keep my place</button><Button variant="primary" icon={X} onClick={() => { leaveQueue(); setConfirm(false) }}>Leave queue</Button></div></Modal></Page> }
+  const alertToggle = (key) => <button className={settings[key] ? 'switch on' : 'switch'} role="switch" aria-checked={settings[key]} onClick={() => updateSetting(key, !settings[key])}><span /></button>;
+  return <Page eyebrow="Virtual waiting room" title="Your queue, in view." actions={<Badge tone={turnTone}>{turnState}</Badge>}><div className="queue-layout">{resumeMessage && <div className={`toast toast-${resumeTone}`} role="status"><span>{resumeMessage}</span></div>}<Card className="live-token"><span>YOUR TOKEN</span><strong>{currentQueue.token}</strong><div className="token-status"><Badge tone={ahead === 0 ? 'success' : 'info'}>{ahead === 0 ? 'Ready' : 'Waiting'}</Badge><span>Joined {currentQueue.joinedAt}</span></div></Card><div className="queue-stats"><Card><span>Currently serving</span><strong>{ahead === 0 ? currentQueue.token : currentQueue.currentServing}</strong></Card><Card><span>People ahead</span><strong>{ahead}</strong></Card><Card><span>Estimated wait</span><strong>{ahead === 0 ? 'Now' : `${wait} min`}</strong></Card><Card><span>Counter</span><strong>{ahead === 0 ? 'Please proceed' : (currentQueue.counter || 'Assigned soon')}</strong></Card></div><Card className="queue-progress-card"><div className="card-row"><div><h2>Queue progress</h2><p>Based on {currentQueue.average} min average service time and {currentQueue.counters} active counters.</p></div><Clock3 size={22} /></div><div className="queue-progress"><span style={{ width: `${ahead === 0 ? 100 : Math.min(96, Math.max(12, 100 - ahead * 7))}%` }} /></div><div className="progress-labels"><span>Joined</span><span>{ahead === 0 ? 'Ready now' : (ahead <= 2 ? 'Almost there' : 'Being served')}</span><span>Your turn</span></div></Card><div className="queue-actions"><Button variant="secondary" icon={Bell} onClick={() => setAlertSettingsOpen(true)}>Manage alerts</Button><button className="button button-secondary" onClick={() => setConfirm(true)}><X size={17} /> Leave queue</button></div></div><Modal open={confirm} title="Leave this queue?" onClose={() => setConfirm(false)}><p className="modal-copy">Are you sure you want to leave queue {currentQueue.token}? Your place will be released.</p><div className="modal-actions"><button className="button button-secondary" onClick={() => setConfirm(false)}>Keep my place</button><Button variant="primary" icon={X} onClick={() => { leaveQueue(); setConfirm(false) }}>Leave queue</Button></div></Modal><Modal open={alertSettingsOpen} title="Queue alerts" onClose={() => setAlertSettingsOpen(false)}><div className="settings-list"><Setting label="Queue status alerts" hint="Notify me about general wait updates." control={alertToggle('queueAlerts')} /><Setting label="Turn alerts" hint="Let me know when my turn is close." control={alertToggle('turnAlerts')} /><Setting label="Spoken updates" hint="Read queue updates out loud." control={alertToggle('spoken')} /><Setting label="Browser notifications" hint="Use system notifications when available." control={<button className={settings.browser ? 'switch on' : 'switch'} role="switch" aria-checked={settings.browser} onClick={() => updateSetting('browser', !settings.browser)}><span /></button>} /></div><div className="modal-actions"><button className="button button-primary" onClick={() => { setResumeMessage('Queue alerts updated.'); setResumeTone('info'); setAlertSettingsOpen(false); }}>Save preferences</button></div></Modal></Page> }
 
 export function NotificationsPage() { const { notifications, setNotifications } = useQueue(); const unread = notifications.filter((item) => !item.read).length; return <Page eyebrow="Stay informed" title="Notifications." copy={`${unread} unread updates from your queues and visits.`} actions={<Button variant="secondary" onClick={() => setNotifications((items) => items.map((item) => ({ ...item, read: true })))}>Mark all read</Button>}><div className="notification-list">{notifications.length ? notifications.map((item) => <Card className={item.read ? 'notification read' : 'notification'} key={item.id}><div className="notification-icon"><Bell size={17} /></div><div><div className="card-row"><h3>{item.title}</h3><span>{item.time}</span></div><p>{item.text}</p><Badge tone="info">{item.category}</Badge></div><button className="icon-button" aria-label="Mark notification read" onClick={() => setNotifications((items) => items.map((notice) => notice.id === item.id ? { ...notice, read: true } : notice))}><Check size={17} /></button></Card>) : <EmptyState title="No notifications" description="You are all caught up." />}</div></Page> }
 
