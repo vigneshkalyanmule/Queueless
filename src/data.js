@@ -8,10 +8,10 @@ export const services = [
 ]
 
 export const locations = [
-  { id: 'citycare', name: 'CityCare Medical Center', address: '24 Lakeview Road, Jubilee Hills', distance: '1.2 km', services: ['General Consultation', 'Doctor Appointment', 'Billing'], queue: 8, wait: 18, status: 'Open', counters: 5 },
-  { id: 'student', name: 'Central Student Services', address: 'North Campus, Administration Block', distance: '2.8 km', services: ['Student Help Desk', 'Admissions', 'ID Card Services'], queue: 21, wait: 24, status: 'Open', counters: 6 },
-  { id: 'metro', name: 'Metro Bank - Main Branch', address: '18 Market Street, Downtown', distance: '3.6 km', services: ['Bank Services', 'Document Verification'], queue: 5, wait: 12, status: 'Open', counters: 4 },
-  { id: 'citizen', name: 'Citizen Service Center', address: 'Civic Plaza, Sector 4', distance: '5.1 km', services: ['Government Services', 'Document Verification'], queue: 19, wait: 42, status: 'Closing soon', counters: 3 },
+  { id: 'citycare', name: 'CityCare Medical Center', address: '24 Lakeview Road, Jubilee Hills', latitude: 17.4239, longitude: 78.4738, distance: '1.2 km', services: ['General Consultation', 'Doctor Appointment', 'Billing'], queue: 8, wait: 18, status: 'Open', counters: 5 },
+  { id: 'student', name: 'Central Student Services', address: 'North Campus, Administration Block', latitude: 17.4457, longitude: 78.3489, distance: '2.8 km', services: ['Student Help Desk', 'Admissions', 'ID Card Services'], queue: 21, wait: 24, status: 'Open', counters: 6 },
+  { id: 'metro', name: 'Metro Bank - Main Branch', address: '18 Market Street, Downtown', latitude: 17.3850, longitude: 78.4867, distance: '3.6 km', services: ['Bank Services', 'Document Verification'], queue: 5, wait: 12, status: 'Open', counters: 4 },
+  { id: 'citizen', name: 'Citizen Service Center', address: 'Civic Plaza, Sector 4', latitude: 17.4065, longitude: 78.4772, distance: '5.1 km', services: ['Government Services', 'Document Verification'], queue: 19, wait: 42, status: 'Closing soon', counters: 3 },
 ]
 
 export const initialNotifications = [
